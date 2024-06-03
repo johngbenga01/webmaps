@@ -113,7 +113,7 @@
     <!-- Include JS at the end of body for better performance -->
     
     <script>
-        var map = L.map('map').setView([53.7098, 27.9534], 13);
+        var map = L.map('map').setView([53.7098, 27.9534], 11);
         L.control.scale().addTo(map);
 
         // Define basemaps
@@ -233,7 +233,7 @@
                             item.addEventListener('click', function() {
                                 searchInput.value = place.display_name;
                                 autocompleteList.innerHTML = '';
-                                map.setView([place.lat, place.lon], 13);
+                                map.setView([place.lat, place.lon], 11);
                             });
                             autocompleteList.appendChild(item);
                         });
@@ -258,7 +258,7 @@
                             lat: data[0].lat,
                             lng: data[0].lon
                         };
-                        map.setView([latlng.lat, latlng.lng], 13);
+                        map.setView([latlng.lat, latlng.lng], 11);
                         L.marker([latlng.lat, latlng.lng]).addTo(map)
                             .bindPopup(data[0].display_name)
                             .openPopup();
