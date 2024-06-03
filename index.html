@@ -132,6 +132,12 @@
             attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         });
 
+        var lyrCartoDB_dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+
         // GeoServer WMS layer
         var wmsLayer = L.tileLayer.wms('http://localhost:8080/geoserver/carto_migration_geoserver/wms', {
             layers: 'carto_migration_geoserver:belarus_luc_2022_for_vis',
@@ -141,13 +147,14 @@
         });
 
         // Add default basemap
-        lyrEsri.addTo(map);
+        lyrCartoDB_dark.addTo(map);
 
         // Basemap layer control
         var baseMaps = {
             "OpenStreetMap": lyrOSM,
             "Esri World Imagery": lyrEsri,
             "CartoDB Positron": lyrCartoDB,
+            "CartoDB Dark": lyrCartoDB_dark,
         };
 
         // Function to create popup content for WFS layer
