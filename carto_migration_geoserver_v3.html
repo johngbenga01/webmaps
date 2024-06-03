@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Carto to Geoserver Migration Test</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-easyprint/dist/bundle.css" />
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <script src="https://unpkg.com/leaflet-easyprint/dist/bundle.js"></script>
+    <!-- jquery link  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- leaflet geoserver request link  -->
+    <script src="lib/L.Geoserver.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        #header {
+            width: 100vw;
+            height: 5%;
+            background-color: beige;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+        #header img {
+            height: 20px;
+        }
+        #header .company-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        #header .company-info h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        #header .search-bar {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        #header .search-bar input {
+            height: 30px;
+            padding: 0 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #header .search-bar button {
+            height: 34px;
+            margin-left: 10px;
+            padding: 0 10px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #header .search-bar button:hover {
+            background-color: #0056b3;
+        }
+        #autocomplete-list {
+            position: absolute;
+            top: 35px;
+            left: 0;
+            right: 0;
+            border: 1px solid #ccc;
+            border-top: none;
+            z-index: 1000;
+            background-color: white;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .autocomplete-item {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .autocomplete-item:hover {
+            background-color: #e9e9e9;
+        }
+        #map {
+            height: 95%;
+            width: 100vw;
+        }
+/*        #input {
+            width: 100vw;
+            height: 15%;
+            background-color: beige;
+        }*/
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img src="https://goodjobs.eu/imgproxy/8DHNL6Fu4b2eeXTYAEelfky2mkCTwwfG8V_Mna697HY/rs:fit:300:180/bG9jYWw6Ly8vY29tcGFuaWVzLzk2OGFhNTc4LWE5MGItNDEwMC1hY2RjLWZmMjQ4NjAxOGJhNy9icDd3bk03TE1KRzRYbHdsN2phOTFLTFM0SjhzUG9UbjU1aHVUNDBZLnBuZw==.webp" alt="Company Logo">
+        <div class="company-info">
+            <h1>GRAS: CARTO MIGRATION TO GEOSERVER TEST</h1>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search...">
+            <div id="autocomplete-list"></div>
+            <button id="search-button">Search</button>
+        </div>
+    </div>
+    <div id="map"></div>
+<!--     <div id="input">
+        <img src="http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=50&HEIGHT=50&LAYER=carto_migration_geoserver:belarus_luc_2022_for_vis&LEGEND_OPTIONS=fontStyle:bold;borderColor:0000ff;border:true;fontColor:ff0000;fontSize:18">
+    </div> -->
+    <script>
+        var map = L.map('map').setView([53.7098, 27.9534], 11);
+        L.control.scale().addTo(map);
+
+        // Define basemaps
+        var lyrOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        });
+
+        var lyrEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        var lyrStamenWatercolor = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg', {
+            maxZoom: 16,
+            attribution: '&copy; <a href="https://stamen.com">Stamen Design</a>, under <a href="https://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="https://openstreetmap.org">OpenStreetMap</a>, under <a href="https://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.'
+        });
+
+        var lyrCartoDB = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        // GeoServer WMS layer
+        var wmsLayer = L.tileLayer.wms('http://localhost:8080/geoserver/carto_migration_geoserver/wms', {
+            layers: 'carto_migration_geoserver:belarus_luc_2022_for_vis',
+            format: 'image/png',
+            transparent: true,
+            attribution: "GeoServer WMS"
+        });
+
+        // Add default basemap
+        lyrEsri.addTo(map);
+
+        // Basemap layer control
+        var baseMaps = {
+            "OpenStreetMap": lyrOSM,
+            "Esri World Imagery": lyrEsri,
+            "Stamen Watercolor": lyrStamenWatercolor,
+            "CartoDB Positron": lyrCartoDB,
+        };
+
+
+        // Geoserver WFS layer
+        var wfsLayer = L.Geoserver.wfs("http://localhost:8080/geoserver/wfs", {
+                    layers: "carto_migration_geoserver:belarus_luc_2022_for_vis",
+                    style: {
+                      color: "red",
+                      // fillColor: "red",
+                    },
+                    onEachFeature: function (feature, layer) {
+                      console.log(feature);
+                      layer.bindPopup(
+                        "Land use change year: " + feature.properties.year
+                      );
+                    },
+                    // CQL_FILTER: "district='Syangja'",
+                  });
+        // wfsLayer.addTo(map);
+
+        var overlayMaps = {
+            "Belarus LUC 2022 (WMS)": wmsLayer,
+            "Belarus LUC 2022 (WFS)": wfsLayer
+         
+        };
+
+        var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+        var layerLegend = L.Geoserver.legend("http://localhost:8080/geoserver/wms", {
+                    layers: "carto_migration_geoserver:belarus_luc_2022_for_vis",
+                    // style: `stylefile`,
+                  });
+
+        layerLegend.addTo(map);
+
+        // Initialize Leaflet plugins (measure and print)
+        L.control.measure({
+            position: 'topleft' // Change the position to the left side
+        }).addTo(map);
+        L.easyPrint({
+            title: 'Print Map',
+            position: 'topright',
+            sizeModes: ['A4Portrait', 'A4Landscape'],
+            filename: 'myMap',
+            exportOnly: true,
+            hideControlContainer: false
+        }).addTo(map);
+
+        // Geocoding and autocomplete functionality
+        var searchInput = document.getElementById('search-input');
+        var autocompleteList = document.getElementById('autocomplete-list');
+
+        searchInput.addEventListener('input', function() {
+            var query = searchInput.value;
+            if (query.length > 2) {
+                var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        autocompleteList.innerHTML = '';
+                        data.forEach(function(place) {
+                            var item = document.createElement('div');
+                            item.classList.add('autocomplete-item');
+                            item.innerText = place.display_name;
+                            item.addEventListener('click', function() {
+                                searchInput.value = place.display_name;
+                                autocompleteList.innerHTML = '';
+                                map.setView([place.lat, place.lon], 13);
+                            });
+                            autocompleteList.appendChild(item);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                autocompleteList.innerHTML = '';
+            }
+        });
+
+        document.getElementById('search-button').addEventListener('click', function() {
+            var query = searchInput.value;
+            var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        var latlng = {
+                            lat: data[0].lat,
+                            lng: data[0].lon
+                        };
+                        map.setView([latlng.lat, latlng.lng], 13);
+                        L.marker([latlng.lat, latlng.lng]).addTo(map)
+                            .bindPopup(data[0].display_name)
+                            .openPopup();
+                    } else {
+                        alert('Location not found');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while searching for the location');
+                });
+        });
+    </script>
+</body>
+
+</html>
